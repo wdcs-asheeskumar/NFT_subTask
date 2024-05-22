@@ -118,7 +118,7 @@ contract MyNFTToken is ERC1155, Ownable, ERC1155Burnable, ERC20 {
     }
 
     /// @dev Function to white list the users.
-    function whiteListing(address _accountAddress) public {
+    function whiteListing(address _accountAddress) public onlyOwner {
         require(
             whiteListedUsers[_accountAddress] == false,
             "User already whitelisted"
