@@ -29,6 +29,11 @@ contract MyNFTToken is ERC1155, Ownable, ERC1155Burnable, ERC20 {
         bool blackNftWT2;
         bool goldNFTWT2;
     }
+    /// @dev Struct to store amount of black token and gold token held by the user
+    struct tokenAmount {
+        uint256 blackTokenAmount;
+        uint256 goldTokenAmount;
+    }
     /// @dev mapping the user's record
     mapping(address => userRecord) public userData;
     /// @dev mapping the user's list corresponding to there wallet address
@@ -39,6 +44,8 @@ contract MyNFTToken is ERC1155, Ownable, ERC1155Burnable, ERC20 {
     mapping(address => whiteListingTier1) public whiteListTier1Record;
     /// @dev mapping the NFT's data of users who are included in tier 2
     mapping(address => whiteListingTier2) public whiteListTier2Record;
+    /// @dev mapping the amount of tokens held by an user
+    mapping(address => tokenAmount) public tokenAmountMapping;
     /// @dev mapping for the time at which the user is getting whitelisted
     mapping(address => uint256) public whiteListedUsersTimes;
 
@@ -63,6 +70,11 @@ contract MyNFTToken is ERC1155, Ownable, ERC1155Burnable, ERC20 {
         _setURI(newuri);
     }
 
+    /// @dev function for checking if the URI is valid or not
+    function getUri(uint256 _id) public view returns (string memory) {
+        return uri(_id);
+    }
+
     /// @dev Function to check total token balance
     function totalTokens() public view returns (uint256) {
         return balanceOf(address(this));
@@ -77,7 +89,7 @@ contract MyNFTToken is ERC1155, Ownable, ERC1155Burnable, ERC20 {
         bool _isGoldNft1,
         bool _isBlackNft2,
         bool _isGoldNft2
-    ) public {
+    ) public returns (bool) {
         require(_accountAddress != address(0), "Invalid address");
         require(
             userList[_accountAddress] == false,
@@ -102,10 +114,11 @@ contract MyNFTToken is ERC1155, Ownable, ERC1155Burnable, ERC20 {
                 userData[_accountAddress].goldNFTT2 = true;
             }
         }
+        return true;
     }
 
-    /// @dev  Function to white list the users.
-    function whiteListing(address _accountAddress) public onlyOwner {
+    /// @dev Function to white list the users.
+    function whiteListing(address _accountAddress) public {
         require(
             whiteListedUsers[_accountAddress] == false,
             "User already whitelisted"
@@ -148,7 +161,7 @@ contract MyNFTToken is ERC1155, Ownable, ERC1155Burnable, ERC20 {
             whiteListedUsers[_accountAddress] == true,
             "Only whitelisted users can access this functionality."
         );
-
+            
         if (
             block.timestamp - whiteListedUsersTimes[_accountAddress] >
             timeFrame1 &&
@@ -191,6 +204,8 @@ contract MyNFTToken is ERC1155, Ownable, ERC1155Burnable, ERC20 {
             block.timestamp - whiteListedUsersTimes[_accountAddress] <
             timeFrame4
         ) {
+            tokenAmountMapping[_accountAddress].blackTokenAmount = 25;
+            tokenAmountMapping[_accountAddress].goldTokenAmount = 75;
             uint256 tokenForBlackandGoldNFT = (25 *
                 userData[_accountAddress].blackNftTCount) +
                 (75 * userData[_accountAddress].goldNFTTCount);
@@ -205,9 +220,16 @@ contract MyNFTToken is ERC1155, Ownable, ERC1155Burnable, ERC20 {
             block.timestamp - whiteListedUsersTimes[_accountAddress] <
             timeFrame5
         ) {
-            uint256 tokenForBlackandGoldNFT = (30 *
+            uint256 blackTokenHeld = 30 -
+                tokenAmountMapping[_accountAddress].blackTokenAmount;
+            uint256 goldTokenHeld = 90 -
+                tokenAmountMapping[_accountAddress].goldTokenAmount;
+            tokenAmountMapping[_accountAddress]
+                .blackTokenAmount = blackTokenHeld;
+            tokenAmountMapping[_accountAddress].goldTokenAmount = goldTokenHeld;
+            uint256 tokenForBlackandGoldNFT = (blackTokenHeld *
                 userData[_accountAddress].blackNftTCount) +
-                (90 * userData[_accountAddress].goldNFTTCount);
+                (goldTokenHeld * userData[_accountAddress].goldNFTTCount);
             transferFrom(
                 address(this),
                 _accountAddress,
@@ -219,9 +241,16 @@ contract MyNFTToken is ERC1155, Ownable, ERC1155Burnable, ERC20 {
             block.timestamp - whiteListedUsersTimes[_accountAddress] <
             timeFrame6
         ) {
-            uint256 tokenForBlackandGoldNFT = (50 *
+            uint256 blackTokenHeld = 50 -
+                tokenAmountMapping[_accountAddress].blackTokenAmount;
+            uint256 goldTokenHeld = 150 -
+                tokenAmountMapping[_accountAddress].goldTokenAmount;
+            tokenAmountMapping[_accountAddress]
+                .blackTokenAmount = blackTokenHeld;
+            tokenAmountMapping[_accountAddress].goldTokenAmount = goldTokenHeld;
+            uint256 tokenForBlackandGoldNFT = (blackTokenHeld *
                 userData[_accountAddress].blackNftTCount) +
-                (150 * userData[_accountAddress].goldNFTTCount);
+                (goldTokenHeld * userData[_accountAddress].goldNFTTCount);
             transferFrom(
                 address(this),
                 _accountAddress,
