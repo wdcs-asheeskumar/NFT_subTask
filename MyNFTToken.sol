@@ -31,8 +31,9 @@ contract MyNFTToken is ERC1155, Ownable, ERC1155Burnable, ERC20 {
     }
     /// @dev Struct to store amount of black token and gold token held by the user
     struct tokenAmount {
-        uint256 blackTokenAmount;
-        uint256 goldTokenAmount;
+        bool tier3chosen;
+        bool tier4chosen;
+        bool tier5chosen;
     }
     /// @dev mapping the user's record
     mapping(address => userRecord) public userData;
@@ -161,7 +162,7 @@ contract MyNFTToken is ERC1155, Ownable, ERC1155Burnable, ERC20 {
             whiteListedUsers[_accountAddress] == true,
             "Only whitelisted users can access this functionality."
         );
-            
+
         if (
             block.timestamp - whiteListedUsersTimes[_accountAddress] >
             timeFrame1 &&
@@ -204,11 +205,11 @@ contract MyNFTToken is ERC1155, Ownable, ERC1155Burnable, ERC20 {
             block.timestamp - whiteListedUsersTimes[_accountAddress] <
             timeFrame4
         ) {
-            tokenAmountMapping[_accountAddress].blackTokenAmount = 25;
-            tokenAmountMapping[_accountAddress].goldTokenAmount = 75;
-            uint256 tokenForBlackandGoldNFT = (25 *
-                userData[_accountAddress].blackNftTCount) +
-                (75 * userData[_accountAddress].goldNFTTCount);
+            tokenAmountMapping[_accountAddress].tier3chosen = true;
+            uint256 blackValue = 25 * userData[_accountAddress].blackNftTCount;
+            uint256 goldValue = 75 * userData[_accountAddress].goldNFTTCount;
+            uint256 tokenForBlackandGoldNFT = blackValue + goldValue;
+
             transferFrom(
                 address(this),
                 _accountAddress,
@@ -220,16 +221,18 @@ contract MyNFTToken is ERC1155, Ownable, ERC1155Burnable, ERC20 {
             block.timestamp - whiteListedUsersTimes[_accountAddress] <
             timeFrame5
         ) {
-            uint256 blackTokenHeld = 30 -
-                tokenAmountMapping[_accountAddress].blackTokenAmount;
-            uint256 goldTokenHeld = 90 -
-                tokenAmountMapping[_accountAddress].goldTokenAmount;
-            tokenAmountMapping[_accountAddress]
-                .blackTokenAmount = blackTokenHeld;
-            tokenAmountMapping[_accountAddress].goldTokenAmount = goldTokenHeld;
-            uint256 tokenForBlackandGoldNFT = (blackTokenHeld *
-                userData[_accountAddress].blackNftTCount) +
-                (goldTokenHeld * userData[_accountAddress].goldNFTTCount);
+            uint256 tokenForBlackandGoldNFT;
+            tokenAmountMapping[_accountAddress].tier4chosen = true;
+            if (tokenAmountMapping[_accountAddress].tier3chosen == false) {
+                tokenForBlackandGoldNFT =
+                    (30 * userData[_accountAddress].blackNftTCount) +
+                    (90 * userData[_accountAddress].goldNFTTCount);
+            } else {
+                tokenForBlackandGoldNFT =
+                    (5 * userData[_accountAddress].blackNftTCount) +
+                    (15 * userData[_accountAddress].goldNFTTCount);
+            }
+
             transferFrom(
                 address(this),
                 _accountAddress,
@@ -241,21 +244,45 @@ contract MyNFTToken is ERC1155, Ownable, ERC1155Burnable, ERC20 {
             block.timestamp - whiteListedUsersTimes[_accountAddress] <
             timeFrame6
         ) {
-            uint256 blackTokenHeld = 50 -
-                tokenAmountMapping[_accountAddress].blackTokenAmount;
-            uint256 goldTokenHeld = 150 -
-                tokenAmountMapping[_accountAddress].goldTokenAmount;
-            tokenAmountMapping[_accountAddress]
-                .blackTokenAmount = blackTokenHeld;
-            tokenAmountMapping[_accountAddress].goldTokenAmount = goldTokenHeld;
-            uint256 tokenForBlackandGoldNFT = (blackTokenHeld *
-                userData[_accountAddress].blackNftTCount) +
-                (goldTokenHeld * userData[_accountAddress].goldNFTTCount);
-            transferFrom(
-                address(this),
-                _accountAddress,
-                tokenForBlackandGoldNFT
-            );
+            uint256 tokenForBlackandGoldNFTT5;
+            tokenAmountMapping[_accountAddress].tier5chosen = true;
+            if (
+                tokenAmountMapping[_accountAddress].tier3chosen == true &&
+                tokenAmountMapping[_accountAddress].tier4chosen == true
+            ) {
+                tokenForBlackandGoldNFTT5 =
+                    (20 * userData[_accountAddress].blackNftTCount) +
+                    (60 * userData[_accountAddress].goldNFTTCount);
+                transferFrom(
+                    address(this),
+                    _accountAddress,
+                    tokenForBlackandGoldNFTT5
+                );
+            } else if (
+                tokenAmountMapping[_accountAddress].tier3chosen == false &&
+                tokenAmountMapping[_accountAddress].tier4chosen == true
+            ) {
+                tokenForBlackandGoldNFTT5 =
+                    (45 * userData[_accountAddress].blackNftTCount) +
+                    (135 * userData[_accountAddress].goldNFTTCount);
+                transferFrom(
+                    address(this),
+                    _accountAddress,
+                    tokenForBlackandGoldNFTT5
+                );
+            } else if (
+                tokenAmountMapping[_accountAddress].tier3chosen == true &&
+                tokenAmountMapping[_accountAddress].tier4chosen == false
+            ) {
+                tokenForBlackandGoldNFTT5 =
+                    (25 * userData[_accountAddress].blackNftTCount) +
+                    (75 * userData[_accountAddress].goldNFTTCount);
+                transferFrom(
+                    address(this),
+                    _accountAddress,
+                    tokenForBlackandGoldNFTT5
+                );
+            }
         }
     }
 
