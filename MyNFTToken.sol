@@ -49,9 +49,12 @@ contract MyNFTToken is ERC1155, Ownable, ERC1155Burnable, ERC20 {
     mapping(address => tokenAmount) public tokenAmountMapping;
     /// @dev mapping for the time at which the user is getting whitelisted
     mapping(address => uint256) public whiteListedUsersTimes;
+    /// @dev mapping to hold the amount of tokens held by the user
+    mapping(address => uint256) public tokensOwned;
 
+    event Deposit(address account, uint256 amount);
     address internal initialOwner;
-    address payable addr = payable(msg.sender);
+    address payable addr = payable(address(this));
     /// @dev declaring the variables for the different time frames
     uint256 private timeFrame1 = 0;
     uint256 private timeFrame2 = 30 minutes;
@@ -79,6 +82,20 @@ contract MyNFTToken is ERC1155, Ownable, ERC1155Burnable, ERC20 {
     /// @dev Function to check total token balance
     function totalTokens() public view returns (uint256) {
         return balanceOf(address(this));
+    }
+
+    /// @dev Function to view the users added in the user list
+    function viewAddedUserInTheList(
+        address _accountAddress
+    ) public view returns (bool) {
+        return userList[_accountAddress];
+    }
+
+    /// @dev Function to view the users addred in the whitelist
+    function viewWhitelistedUsersInTheList(
+        address _accountAddress
+    ) public view returns (bool) {
+        return whiteListedUsers[_accountAddress];
     }
 
     /// @dev Funtion to register user in the pool. It is accessible to the users.
@@ -175,10 +192,10 @@ contract MyNFTToken is ERC1155, Ownable, ERC1155Burnable, ERC20 {
             );
 
             _mint(_accountAddress, 0, _valueOfBlackNft, "0x0");
-            addr.transfer(_valueOfBlackNft * 10000000000000000 wei);
+            addr.transfer(_valueOfBlackNft * 1 ether);
 
-            _mint(_accountAddress, 1, _valueOfGoldNft, "0x0");
-            addr.transfer(_valueOfGoldNft * 20000000000000000 wei);
+            _mint(_accountAddress, 0, _valueOfGoldNft, "0x0");
+            addr.transfer(_valueOfGoldNft * 2 ether);
             userData[_accountAddress].blackNftTCount = _valueOfBlackNft;
             userData[_accountAddress].goldNFTTCount = _valueOfGoldNft;
         } else if (
@@ -193,12 +210,18 @@ contract MyNFTToken is ERC1155, Ownable, ERC1155Burnable, ERC20 {
             );
 
             _mint(_accountAddress, 0, _valueOfBlackNft, "0x0");
-            addr.transfer(_valueOfBlackNft * 10000000000000000 wei);
+            (bool sent, ) = addr.call{value: 1 ether}("");
+            require(sent, "Ether not sent");
 
-            _mint(_accountAddress, 1, _valueOfGoldNft, "0x0");
-            addr.transfer(_valueOfGoldNft * 20000000000000000 wei);
-            userData[_accountAddress].blackNftTCount = _valueOfBlackNft;
-            userData[_accountAddress].goldNFTTCount = _valueOfGoldNft;
+            _mint(_accountAddress, 0, _valueOfGoldNft, "0x0");
+            (bool sent2, ) = addr.call{value: 2 ether}("");
+            require(sent2, "Ether not sent");
+            userData[_accountAddress].blackNftTCount =
+                userData[_accountAddress].blackNftTCount +
+                _valueOfBlackNft;
+            userData[_accountAddress].goldNFTTCount =
+                userData[_accountAddress].goldNFTTCount +
+                _valueOfGoldNft;
         } else if (
             block.timestamp - whiteListedUsersTimes[_accountAddress] >
             timeFrame3 &&
@@ -209,12 +232,9 @@ contract MyNFTToken is ERC1155, Ownable, ERC1155Burnable, ERC20 {
             uint256 blackValue = 25 * userData[_accountAddress].blackNftTCount;
             uint256 goldValue = 75 * userData[_accountAddress].goldNFTTCount;
             uint256 tokenForBlackandGoldNFT = blackValue + goldValue;
+            tokensOwned[_accountAddress] = tokenForBlackandGoldNFT;
 
-            transferFrom(
-                address(this),
-                _accountAddress,
-                tokenForBlackandGoldNFT
-            );
+            _transfer(address(this), _accountAddress, tokenForBlackandGoldNFT);
         } else if (
             block.timestamp - whiteListedUsersTimes[_accountAddress] >
             timeFrame4 &&
@@ -227,17 +247,17 @@ contract MyNFTToken is ERC1155, Ownable, ERC1155Burnable, ERC20 {
                 tokenForBlackandGoldNFT =
                     (30 * userData[_accountAddress].blackNftTCount) +
                     (90 * userData[_accountAddress].goldNFTTCount);
+                tokensOwned[_accountAddress] = tokenForBlackandGoldNFT;
             } else {
                 tokenForBlackandGoldNFT =
                     (5 * userData[_accountAddress].blackNftTCount) +
                     (15 * userData[_accountAddress].goldNFTTCount);
             }
+            tokensOwned[_accountAddress] =
+                tokensOwned[_accountAddress] +
+                tokenForBlackandGoldNFT;
 
-            transferFrom(
-                address(this),
-                _accountAddress,
-                tokenForBlackandGoldNFT
-            );
+            _transfer(address(this), _accountAddress, tokenForBlackandGoldNFT);
         } else if (
             block.timestamp - whiteListedUsersTimes[_accountAddress] >
             timeFrame5 &&
@@ -253,11 +273,14 @@ contract MyNFTToken is ERC1155, Ownable, ERC1155Burnable, ERC20 {
                 tokenForBlackandGoldNFTT5 =
                     (20 * userData[_accountAddress].blackNftTCount) +
                     (60 * userData[_accountAddress].goldNFTTCount);
-                transferFrom(
+                _transfer(
                     address(this),
                     _accountAddress,
                     tokenForBlackandGoldNFTT5
                 );
+                tokensOwned[_accountAddress] =
+                    tokensOwned[_accountAddress] +
+                    tokenForBlackandGoldNFTT5;
             } else if (
                 tokenAmountMapping[_accountAddress].tier3chosen == false &&
                 tokenAmountMapping[_accountAddress].tier4chosen == true
@@ -265,11 +288,14 @@ contract MyNFTToken is ERC1155, Ownable, ERC1155Burnable, ERC20 {
                 tokenForBlackandGoldNFTT5 =
                     (45 * userData[_accountAddress].blackNftTCount) +
                     (135 * userData[_accountAddress].goldNFTTCount);
-                transferFrom(
+                _transfer(
                     address(this),
                     _accountAddress,
                     tokenForBlackandGoldNFTT5
                 );
+                tokensOwned[_accountAddress] =
+                    tokensOwned[_accountAddress] +
+                    tokenForBlackandGoldNFTT5;
             } else if (
                 tokenAmountMapping[_accountAddress].tier3chosen == true &&
                 tokenAmountMapping[_accountAddress].tier4chosen == false
@@ -277,26 +303,47 @@ contract MyNFTToken is ERC1155, Ownable, ERC1155Burnable, ERC20 {
                 tokenForBlackandGoldNFTT5 =
                     (25 * userData[_accountAddress].blackNftTCount) +
                     (75 * userData[_accountAddress].goldNFTTCount);
-                transferFrom(
+                _transfer(
                     address(this),
                     _accountAddress,
                     tokenForBlackandGoldNFTT5
                 );
+                tokensOwned[_accountAddress] =
+                    tokensOwned[_accountAddress] +
+                    tokenForBlackandGoldNFTT5;
+            } else {
+                tokenForBlackandGoldNFTT5 =
+                    (50 * userData[_accountAddress].blackNftTCount) +
+                    (150 * userData[_accountAddress].goldNFTTCount);
+                _transfer(
+                    address(this),
+                    _accountAddress,
+                    tokenForBlackandGoldNFTT5
+                );
+                tokensOwned[_accountAddress] =
+                    tokensOwned[_accountAddress] +
+                    tokenForBlackandGoldNFTT5;
             }
         }
     }
 
-    /// @dev Function to view the users added in the user list
-    function viewAddedUserInTheList(
-        address _accountAddress
-    ) public view returns (bool) {
-        return userList[_accountAddress];
+    function getOwnerTokenValue(
+        address _address
+    ) public view returns (uint256) {
+        return tokensOwned[_address];
     }
 
-    /// @dev Function to view the users addred in the whitelist
-    function viewWhitelistedUsersInTheList(
+    function getNumberOfNfts(
         address _accountAddress
-    ) public view returns (bool) {
-        return whiteListedUsers[_accountAddress];
+    ) public view returns (uint256) {
+        uint256 num = userData[_accountAddress].blackNftTCount +
+            userData[_accountAddress].goldNFTTCount;
+        return num;
     }
+
+    receive() external payable {
+        emit Deposit(msg.sender, msg.value);
+    }
+
+    fallback() external payable {}
 }
